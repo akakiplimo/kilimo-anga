@@ -1,88 +1,178 @@
-import { cva, type VariantProps } from 'class-variance-authority';
-import * as React from 'react';
-import { Pressable } from 'react-native';
-import { TextClassContext } from '~/components/ui/text';
-import { cn } from '~/lib/utils';
+// apps/mobile/components/ui/Button.tsx
+import React from "react";
+import {
+  TouchableOpacity,
+  Text,
+  StyleSheet,
+  ActivityIndicator,
+  View,
+  StyleProp,
+  ViewStyle,
+  TextStyle,
+} from "react-native";
+import { useTheme } from "@react-navigation/native";
 
-const buttonVariants = cva(
-  'group flex items-center justify-center rounded-md web:ring-offset-background web:transition-colors web:focus-visible:outline-none web:focus-visible:ring-2 web:focus-visible:ring-ring web:focus-visible:ring-offset-2',
-  {
-    variants: {
-      variant: {
-        default: 'bg-primary web:hover:opacity-90 active:opacity-90',
-        destructive: 'bg-destructive web:hover:opacity-90 active:opacity-90',
-        outline:
-          'border border-input bg-background web:hover:bg-accent web:hover:text-accent-foreground active:bg-accent',
-        secondary: 'bg-secondary web:hover:opacity-80 active:opacity-80',
-        ghost: 'web:hover:bg-accent web:hover:text-accent-foreground active:bg-accent',
-        link: 'web:underline-offset-4 web:hover:underline web:focus:underline ',
-      },
-      size: {
-        default: 'h-10 px-4 py-2 native:h-12 native:px-5 native:py-3',
-        sm: 'h-9 rounded-md px-3',
-        lg: 'h-11 rounded-md px-8 native:h-14',
-        icon: 'h-10 w-10',
-      },
-    },
-    defaultVariants: {
-      variant: 'default',
-      size: 'default',
-    },
-  }
-);
+type ButtonVariant =
+  | "default"
+  | "primary"
+  | "outline"
+  | "destructive"
+  | "ghost"
+  | "link";
+type ButtonSize = "default" | "sm" | "lg" | "icon";
 
-const buttonTextVariants = cva(
-  'web:whitespace-nowrap text-sm native:text-base font-medium text-foreground web:transition-colors',
-  {
-    variants: {
-      variant: {
-        default: 'text-primary-foreground',
-        destructive: 'text-destructive-foreground',
-        outline: 'group-active:text-accent-foreground',
-        secondary: 'text-secondary-foreground group-active:text-secondary-foreground',
-        ghost: 'group-active:text-accent-foreground',
-        link: 'text-primary group-active:underline',
-      },
-      size: {
-        default: '',
-        sm: '',
-        lg: 'native:text-lg',
-        icon: '',
-      },
-    },
-    defaultVariants: {
-      variant: 'default',
-      size: 'default',
-    },
-  }
-);
+interface ButtonProps {
+  title: string;
+  onPress?: () => void;
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  disabled?: boolean;
+  loading?: boolean;
+  style?: StyleProp<ViewStyle>;
+  textStyle?: StyleProp<TextStyle>;
+  icon?: React.ReactNode;
+}
 
-type ButtonProps = React.ComponentPropsWithoutRef<typeof Pressable> &
-  VariantProps<typeof buttonVariants>;
+export function Button({
+  title,
+  onPress,
+  variant = "default",
+  size = "default",
+  disabled = false,
+  loading = false,
+  style,
+  textStyle,
+  icon,
+}: ButtonProps) {
+  const { colors } = useTheme();
 
-const Button = React.forwardRef<React.ElementRef<typeof Pressable>, ButtonProps>(
-  ({ className, variant, size, ...props }, ref) => {
-    return (
-      <TextClassContext.Provider
-        value={cn(
-          props.disabled && 'web:pointer-events-none',
-          buttonTextVariants({ variant, size })
-        )}
-      >
-        <Pressable
-          className={cn(
-            props.disabled && 'opacity-50 web:pointer-events-none',
-            buttonVariants({ variant, size, className })
-          )}
-          ref={ref}
-          role='button'
-          {...props}
-        />
-      </TextClassContext.Provider>
-    );
-  }
-);
-Button.displayName = 'Button';
+  const getButtonStyle = () => {
+    const baseStyle = styles.button;
+    const sizeStyle = styles[`button_${size}`] || styles.button_default;
 
-export { Button, buttonTextVariants, buttonVariants };
-export type { ButtonProps };
+    let variantStyle: any = {};
+    switch (variant) {
+      case "primary":
+        variantStyle = { backgroundColor: colors.primary };
+        break;
+      case "outline":
+        variantStyle = {
+          backgroundColor: "transparent",
+          borderWidth: 1,
+          borderColor: colors.primary,
+        };
+        break;
+      case "destructive":
+        variantStyle = { backgroundColor: "#F44336" };
+        break;
+      case "ghost":
+        variantStyle = { backgroundColor: "transparent" };
+        break;
+      case "link":
+        variantStyle = {
+          backgroundColor: "transparent",
+          paddingVertical: 0,
+          paddingHorizontal: 0,
+        };
+        break;
+      default:
+        variantStyle = { backgroundColor: colors.primary };
+    }
+
+    const disabledStyle = disabled ? { opacity: 0.5 } : {};
+
+    return [baseStyle, sizeStyle, variantStyle, disabledStyle, style];
+  };
+
+  const getTextStyle = () => {
+    let textColor;
+    switch (variant) {
+      case "outline":
+      case "ghost":
+      case "link":
+        textColor = colors.primary;
+        break;
+      default:
+        textColor = "white";
+    }
+
+    const baseTextStyle = {
+      fontSize: 16,
+      fontWeight: "500",
+      color: textColor,
+    };
+
+    let sizeTextStyle = {};
+    if (size === "sm") {
+      sizeTextStyle = { fontSize: 14 };
+    } else if (size === "lg") {
+      sizeTextStyle = { fontSize: 18 };
+    }
+
+    return [baseTextStyle, sizeTextStyle, textStyle];
+  };
+
+  return (
+    <TouchableOpacity
+      style={getButtonStyle()}
+      onPress={onPress}
+      disabled={disabled || loading}
+      activeOpacity={0.7}
+    >
+      <View style={styles.contentContainer}>
+        {loading ? (
+          <ActivityIndicator
+            size="small"
+            color={
+              variant === "outline" || variant === "ghost" || variant === "link"
+                ? colors.primary
+                : "white"
+            }
+            style={styles.indicator}
+          />
+        ) : icon ? (
+          <View style={styles.iconContainer}>{icon}</View>
+        ) : null}
+
+        <Text style={getTextStyle()}>{title}</Text>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+const styles = StyleSheet.create({
+  button: {
+    borderRadius: 6,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+  },
+  button_default: {},
+  button_sm: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  button_lg: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+  },
+  button_icon: {
+    width: 40,
+    height: 40,
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+    borderRadius: 20,
+  },
+  contentContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  iconContainer: {
+    marginRight: 8,
+  },
+  indicator: {
+    marginRight: 8,
+  },
+});

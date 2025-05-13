@@ -1,95 +1,214 @@
-import * as React from 'react';
-import { View } from 'react-native';
-import Animated, { FadeInUp, FadeOutDown, LayoutAnimationConfig } from 'react-native-reanimated';
-import { Info } from '~/lib/icons/Info';
-import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar';
-import { Button } from '~/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '~/components/ui/card';
-import { Progress } from '~/components/ui/progress';
-import { Text } from '~/components/ui/text';
-import { Tooltip, TooltipContent, TooltipTrigger } from '~/components/ui/tooltip';
+// apps/mobile/app/index.tsx
+import React, { useState } from "react";
+import { View, StyleSheet, Alert } from "react-native";
+import { useForm, Controller } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import * as yup from "yup";
+import { useRouter } from "expo-router";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useTheme } from "@react-navigation/native";
+import { Text, Button, TextField } from "../components/ui";
+import { useAuth } from "../context/auth";
 
-const GITHUB_AVATAR_URI =
-  'https://i.pinimg.com/originals/ef/a2/8d/efa28d18a04e7fa40ed49eeb0ab660db.jpg';
+// Form validation schemas
+const phoneValidationSchema = yup.object().shape({
+  phoneNumber: yup
+    .string()
+    .matches(/^[0-9]{10}$/, "Phone number must be 10 digits")
+    .required("Phone number is required"),
+});
 
-export default function Screen() {
-  const [progress, setProgress] = React.useState(78);
+const otpValidationSchema = yup.object().shape({
+  otp: yup
+    .string()
+    .matches(/^[0-9]{6}$/, "OTP must be 6 digits")
+    .required("OTP is required"),
+});
 
-  function updateProgressValue() {
-    setProgress(Math.floor(Math.random() * 100));
-  }
+// Type definitions for form data
+type PhoneFormData = {
+  phoneNumber: string;
+};
+
+type OtpFormData = {
+  otp: string;
+};
+
+export default function LoginScreen() {
+  const [loading, setLoading] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const router = useRouter();
+  const { colors } = useTheme();
+  const { signIn, requestOtp } = useAuth();
+
+  // Initialize forms
+  const {
+    control: phoneControl,
+    handleSubmit: handlePhoneSubmit,
+    formState: { errors: phoneErrors },
+  } = useForm<PhoneFormData>({
+    resolver: yupResolver(phoneValidationSchema),
+    defaultValues: {
+      phoneNumber: "",
+    },
+  });
+
+  const {
+    control: otpControl,
+    handleSubmit: handleOtpSubmit,
+    formState: { errors: otpErrors },
+  } = useForm<OtpFormData>({
+    resolver: yupResolver(otpValidationSchema),
+    defaultValues: {
+      otp: "",
+    },
+  });
+
+  const onRequestOTP = async (data: PhoneFormData) => {
+    try {
+      setLoading(true);
+      await requestOtp(data.phoneNumber);
+      setPhoneNumber(data.phoneNumber);
+      setOtpSent(true);
+      Alert.alert("Success", "OTP has been sent to your phone");
+    } catch (error: any) {
+      Alert.alert("Failed", error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onVerifyOTP = async (data: OtpFormData) => {
+    try {
+      setLoading(true);
+      await signIn(phoneNumber, data.otp);
+      router.replace("/(app)");
+    } catch (error: any) {
+      Alert.alert("Verification Failed", error.message);
+      setLoading(false);
+    }
+  };
+
   return (
-    <View className='flex-1 justify-center items-center gap-5 p-6 bg-secondary/30'>
-      <Card className='w-full max-w-sm p-6 rounded-2xl'>
-        <CardHeader className='items-center'>
-          <Avatar alt="Rick Sanchez's Avatar" className='w-24 h-24'>
-            <AvatarImage source={{ uri: GITHUB_AVATAR_URI }} />
-            <AvatarFallback>
-              <Text>RS</Text>
-            </AvatarFallback>
-          </Avatar>
-          <View className='p-3' />
-          <CardTitle className='pb-2 text-center'>Rick Sanchez</CardTitle>
-          <View className='flex-row'>
-            <CardDescription className='text-base font-semibold'>Scientist</CardDescription>
-            <Tooltip delayDuration={150}>
-              <TooltipTrigger className='px-2 pb-0.5 active:opacity-50'>
-                <Info size={14} strokeWidth={2.5} className='w-4 h-4 text-foreground/70' />
-              </TooltipTrigger>
-              <TooltipContent className='py-2 px-4 shadow'>
-                <Text className='native:text-lg'>Freelance</Text>
-              </TooltipContent>
-            </Tooltip>
-          </View>
-        </CardHeader>
-        <CardContent>
-          <View className='flex-row justify-around gap-3'>
-            <View className='items-center'>
-              <Text className='text-sm text-muted-foreground'>Dimension</Text>
-              <Text className='text-xl font-semibold'>C-137</Text>
-            </View>
-            <View className='items-center'>
-              <Text className='text-sm text-muted-foreground'>Age</Text>
-              <Text className='text-xl font-semibold'>70</Text>
-            </View>
-            <View className='items-center'>
-              <Text className='text-sm text-muted-foreground'>Species</Text>
-              <Text className='text-xl font-semibold'>Human</Text>
-            </View>
-          </View>
-        </CardContent>
-        <CardFooter className='flex-col gap-3 pb-0'>
-          <View className='flex-row items-center overflow-hidden'>
-            <Text className='text-sm text-muted-foreground'>Productivity:</Text>
-            <LayoutAnimationConfig skipEntering>
-              <Animated.View
-                key={progress}
-                entering={FadeInUp}
-                exiting={FadeOutDown}
-                className='w-11 items-center'
-              >
-                <Text className='text-sm font-bold text-sky-600'>{progress}%</Text>
-              </Animated.View>
-            </LayoutAnimationConfig>
-          </View>
-          <Progress value={progress} className='h-2' indicatorClassName='bg-sky-600' />
-          <View />
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+    >
+      <View style={styles.header}>
+        <Text variant="h1">Kilimo Anga</Text>
+        <Text variant="h3" style={{ marginTop: 10 }}>
+          {otpSent ? "Enter OTP" : "Login to Your Account"}
+        </Text>
+      </View>
+
+      {!otpSent ? (
+        <View style={styles.form}>
+          <Controller
+            control={phoneControl}
+            name="phoneNumber"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <TextField
+                label="Phone Number"
+                placeholder="Enter your phone number"
+                onChangeText={onChange}
+                onBlur={onBlur}
+                value={value}
+                keyboardType="phone-pad"
+                error={phoneErrors.phoneNumber?.message}
+                // leftIcon={<Feather name="phone" size={24} color="#666" />}
+              />
+            )}
+          />
+
           <Button
-            variant='outline'
-            className='shadow shadow-foreground/5'
-            onPress={updateProgressValue}
-          >
-            <Text>Update</Text>
-          </Button>
-        </CardFooter>
-      </Card>
-    </View>
+            title="Send OTP"
+            loading={loading}
+            onPress={handlePhoneSubmit(onRequestOTP)}
+            style={styles.button}
+          />
+
+          <View style={styles.registerContainer}>
+            <Text>Don't have an account? </Text>
+            <Text
+              style={[styles.registerLink, { color: colors.primary }]}
+              onPress={() => router.push("/register")}
+            >
+              Register
+            </Text>
+          </View>
+        </View>
+      ) : (
+        <View style={styles.form}>
+          <Text style={styles.phoneText}>OTP sent to: {phoneNumber}</Text>
+
+          <Controller
+            control={otpControl}
+            name="otp"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <TextField
+                label="OTP Code"
+                placeholder="Enter 6-digit OTP"
+                onChangeText={onChange}
+                onBlur={onBlur}
+                value={value}
+                keyboardType="number-pad"
+                maxLength={6}
+                error={otpErrors.otp?.message}
+                // leftIcon={<MaterialIcons name="lock" size={24} color="#666" />}
+              />
+            )}
+          />
+
+          <Button
+            title="Verify OTP"
+            loading={loading}
+            onPress={handleOtpSubmit(onVerifyOTP)}
+            style={styles.button}
+          />
+
+          <Button
+            title="Back"
+            variant="outline"
+            onPress={() => setOtpSent(false)}
+            style={styles.backButton}
+          />
+        </View>
+      )}
+    </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 20,
+    justifyContent: "center",
+  },
+  header: {
+    alignItems: "center",
+    marginBottom: 40,
+  },
+  form: {
+    width: "100%",
+  },
+  button: {
+    marginTop: 20,
+    borderRadius: 5,
+  },
+  backButton: {
+    marginTop: 15,
+  },
+  registerContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginTop: 20,
+  },
+  registerLink: {
+    fontWeight: "bold",
+  },
+  phoneText: {
+    textAlign: "center",
+    marginBottom: 20,
+    color: "#666",
+  },
+});

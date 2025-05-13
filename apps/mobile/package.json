@@ -1,5 +1,8 @@
 {
-  "name": ".",
+  "name": "kilimo-anga",
+  "slug": "Kilimo Anga",
+  "description": "Kilimo Anga is a mobile application that provides farmers with weather forecasts, agricultural tips, and market prices to help them make informed decisions.",
+  "owner": "Adrian Kiplimo",
   "main": "index.js",
   "version": "1.0.0",
   "scripts": {
@@ -13,6 +16,7 @@
     "postinstall": "npx tailwindcss -i ./global.css -o ./node_modules/.cache/nativewind/global.css"
   },
   "dependencies": {
+    "@expo/vector-icons": "^14.1.0",
     "@hookform/resolvers": "^5.0.1",
     "@react-native-community/datetimepicker": "^8.3.0",
     "@react-navigation/native": "^7.0.0",
@@ -41,7 +45,7 @@
     "react-hook-form": "^7.56.3",
     "react-native": "0.79.2",
     "react-native-dropdown-picker": "^5.4.6",
-    "react-native-maps": "^1.23.7",
+    "react-native-maps": "^1.20.1",
     "react-native-reanimated": "~3.17.5",
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "^4.10.0",
