@@ -7,11 +7,13 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { UsersModule } from '../users/users.module';
 import { JwtStrategy } from './jwt.strategy';
+import { OtpModule } from 'src/otp/otp.module';
 
 @Module({
   imports: [
     UsersModule,
     PassportModule,
+    OtpModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({

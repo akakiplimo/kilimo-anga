@@ -7,6 +7,7 @@ import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { FarmsModule } from './farms/farms.module';
+import { OtpModule } from './otp/otp.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { FarmsModule } from './farms/farms.module';
       }),
       inject: [ConfigService],
     }),
+    OtpModule,
     AuthModule,
     UsersModule,
     FarmsModule,
